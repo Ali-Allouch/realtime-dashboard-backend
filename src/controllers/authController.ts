@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import bcrypt from 'bcryptjs';
+import bcrypt from "bcryptjs";
 import User from "../models/User";
 import generateToken from "../utils/generateToken";
 
@@ -65,4 +65,11 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
   } catch (error) {
     res.status(500).json({ message: (error as Error).message });
   }
+};
+
+// @desc    Get current user profile
+// @route   GET /api/auth/me
+// @access  Private
+export const getMe = async (req: any, res: Response): Promise<void> => {
+  res.status(200).json(req.user);
 };
