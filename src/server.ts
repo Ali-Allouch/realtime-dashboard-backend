@@ -1,5 +1,6 @@
 import express, { Application, Request, Response } from "express";
 import http from "http";
+import os from "os";
 import { Server } from "socket.io";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -48,10 +49,33 @@ io.use((socket, next) => {
   );
 });
 
+const getCPUUsage = () => {
+  const cpus = os.cpus();
+  const totalIdle = cpus.reduce((acc, cpu) => acc + cpu.times.idle, 0);
+  const totalTick = cpus.reduce(
+    (acc, cpu) => acc + Object.values(cpu.times).reduce((a, b) => a + b),
+    0,
+  );
+  return ((1 - totalIdle / totalTick) * 100).toFixed(2);
+};
+
 io.on("connection", (socket) => {
   console.log("New user connected:", socket.id);
 
+  const metricsInterval = setInterval(() => {
+    const data = {
+      cpu: getCPUUsage(),
+      freeMem: (os.freemem() / 1024 / 1024 / 1024).toFixed(2),
+      totalMem: (os.totalmem() / 1024 / 1024 / 1024).toFixed(2),
+      uptime: os.uptime(),
+      timestamp: new Date().toLocaleTimeString(),
+    };
+
+    socket.emit("server_metrics", data);
+  }, 2000);
+
   socket.on("disconnect", () => {
+    clearInterval(metricsInterval);
     console.log("User disconnected");
   });
 });
